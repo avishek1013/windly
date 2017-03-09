@@ -3,6 +3,7 @@ import numpy as np
 
 from collections import defaultdict
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
@@ -37,14 +38,27 @@ def split_data(data, windfarm_id, ratio):
   return train_test_split(data[windfarm_id][:,0].reshape(-1, 1), 
     data[windfarm_id][:,-1], test_size = ratio, random_state=0)
 
-# n_estimators=250, learning_rate=1.0, max_depth=2, 
-#     min_samples_split = 50, random_state = 0
+
 def run_gbrt(x_train, x_test, y_train, y_test):
   print "Training GBRT\n"
   params = {'n_estimators':[750, 1000, 1200], 'learning_rate':[0.1, 1.0], 
     'max_depth':[1, 2, 3]}
   gbrt = GradientBoostingRegressor(random_state = 0, min_samples_split = 100, max_features = 'sqrt')
   grid = GridSearchCV(gbrt, params, scoring = 'neg_mean_squared_error', n_jobs = 4)
+  grid.fit(x_train, y_train)
+
+  print "MSE of Model Prediction"
+  print "Training MSE", mean_squared_error(y_train, grid.predict(x_train))
+  print "Test MSE", mean_squared_error(y_test, grid.predict(x_test))
+
+  print "MSE of Predicting Average"
+  print "Average MSE", mean_squared_error(y_test, [np.mean(y_train)] * len(y_test))
+
+def run_mlp(x_train, x_test, y_train, y_test):
+  print "Training MLP\n"
+  params = {'hidden_layer_sizes':[(100,), (20, 20,)], 'learning_rate_init':[0.1, 0.05], 'alpha':[0.001, 0.01]}
+  mlp = MLPRegressor(random_state = 0, learning_rate = 'adaptive')
+  grid = GridSearchCV(mlp, params, scoring = 'neg_mean_squared_error', n_jobs = 4)
   grid.fit(x_train, y_train)
 
   print "MSE of Model Prediction"
@@ -64,6 +78,7 @@ def main():
 
   # Train and test using gradient boosted regression trees
   run_gbrt(x_train, x_test, y_train, y_test)
+  run_mlp(x_train, x_test, y_train, y_test)
 
 if __name__ == '__main__':
   main()
