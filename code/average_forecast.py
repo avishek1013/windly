@@ -35,14 +35,14 @@ def load_data(filepath):
 
 def split_data(data, windfarm_id, ratio):
   print "Splitting Data\n"
-  return train_test_split(data[windfarm_id][:,0].reshape(-1, 1), 
+  return train_test_split(data[windfarm_id][:,:-1], 
     data[windfarm_id][:,-1], test_size = ratio, random_state=0)
 
 
 def run_gbrt(x_train, x_test, y_train, y_test):
   print "Training GBRT\n"
-  params = {'n_estimators':[750, 1000, 1200], 'learning_rate':[0.1, 1.0], 
-    'max_depth':[1, 2, 3]}
+  params = {'n_estimators':[200, 300, 500], 'learning_rate':[0.1, 1.0], 
+    'max_depth':[1, 2]}
   gbrt = GradientBoostingRegressor(random_state = 0, min_samples_split = 100, max_features = 'sqrt')
   grid = GridSearchCV(gbrt, params, scoring = 'neg_mean_squared_error', n_jobs = 4)
   grid.fit(x_train, y_train)
