@@ -112,20 +112,26 @@ def run_mlp(x_train, x_test, y_train, y_test):
 def main():
   filepath = "../data/virtual_aggregate_data.csv"
   hours = 12
-  gap_range = 3
+  gap_range = 16
   trained_mse, tested_mse = [], []
   gapped = range(gap_range)
   
   # Load the data and split it
   for gap in range(gap_range):
     data = load_data(filepath, gap, hours)
-    x_train, x_test, y_train, y_test = split_data_cont(data, 1, 0.7)
+    x_train, x_test, y_train, y_test = split_data_cont(data, 2, 0.7)
     mse_train, mse_test = run_gbrt(x_train, x_test, y_train, y_test)
     
     trained_mse.append(mse_train)
     tested_mse.append(mse_test)
 
-  plt.plot(gapped, trained_mse, 'r-', gapped, tested_mse, 'b-')
+  plt.plot(gapped, trained_mse, 'o-', color="g", label="Training Error") 
+  plt.plot(gapped, tested_mse, 'o-', color="b", label="Test Error")
+  plt.title("Mean Squared Error Versus Historic Data Interval for Wind Farm #1")
+  plt.xlabel("Interval Between Prediction Time and Last Recorded Energy Value")
+  plt.ylabel("Mean Squared Error")
+  plt.legend(loc="best")
+  plt.grid()
   plt.show()
 
   
