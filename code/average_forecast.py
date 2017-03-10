@@ -1,5 +1,6 @@
 import csv 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from collections import defaultdict
 from sklearn.ensemble import GradientBoostingRegressor
@@ -12,12 +13,10 @@ from sklearn.model_selection import train_test_split
 
 # Note: data has the following form:
 # [timestamp,u,v,ws,wd,energy]
-def load_data(filepath):
-  print "Loading Data"
+def load_data(filepath, gap, hours):
+  # print "Loading Data"
   data = defaultdict(list)
   historical = defaultdict(list)
-  gap = 1
-  hours = 12
 
   with open(filepath, 'rb') as file:
     reader = csv.reader(file)
@@ -65,8 +64,17 @@ def split_data_cont(data, windfarm_id, ratio):
   y_test = data[windfarm_id][b:, -1]
   return x_train, x_test, y_train, y_test
 
-
 def run_gbrt(x_train, x_test, y_train, y_test):
+  print "Training GBRT\n"
+  gbrt = GradientBoostingRegressor(n_estimators = 700, learning_rate = 0.1, max_depth = 2, 
+    random_state = 0, min_samples_split = 100, max_features = 'sqrt')
+  gbrt.fit(x_train, y_train)
+
+  mse_train = mean_squared_error(y_train, gbrt.predict(x_train))
+  mse_test = mean_squared_error(y_test, gbrt.predict(x_test))
+  return mse_train, mse_test
+
+def run_gbrt_grid(x_train, x_test, y_train, y_test):
   print "\nTraining GBRT"
 
   params = {'n_estimators':[700], 'learning_rate':[0.1], 
@@ -103,14 +111,24 @@ def run_mlp(x_train, x_test, y_train, y_test):
 
 def main():
   filepath = "../data/virtual_aggregate_data.csv"
+  hours = 12
+  gap_range = 3
+  trained_mse, tested_mse = [], []
+  gapped = range(gap_range)
   
   # Load the data and split it
-  data = load_data(filepath)
-  x_train, x_test, y_train, y_test = split_data_cont(data, 1, 0.3)
+  for gap in range(gap_range):
+    data = load_data(filepath, gap, hours)
+    x_train, x_test, y_train, y_test = split_data_cont(data, 1, 0.7)
+    mse_train, mse_test = run_gbrt(x_train, x_test, y_train, y_test)
+    
+    trained_mse.append(mse_train)
+    tested_mse.append(mse_test)
 
-  # Train and test using gradient boosted regression trees
-  run_gbrt(x_train, x_test, y_train, y_test)
-  # run_mlp(x_train, x_test, y_train, y_test)
+  plt.plot(gapped, trained_mse, 'r-', gapped, tested_mse, 'b-')
+  plt.show()
+
+  
 
 if __name__ == '__main__':
   main()
